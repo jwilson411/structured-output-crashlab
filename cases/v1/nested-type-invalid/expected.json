@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/user/profile/age"
+  ],
+  "description": "Age arrives as a string; the error must point three levels deep."
+}

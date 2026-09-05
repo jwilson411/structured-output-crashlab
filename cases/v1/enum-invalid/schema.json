@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "order status",
+  "type": "object",
+  "properties": {
+    "status": {
+      "enum": [
+        "pending",
+        "shipped",
+        "cancelled"
+      ]
+    }
+  },
+  "required": [
+    "status"
+  ]
+}

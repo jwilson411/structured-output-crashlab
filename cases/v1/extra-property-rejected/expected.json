@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    ""
+  ],
+  "description": "additionalProperties=false rejects the extra key at the object root."
+}

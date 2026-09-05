@@ -1,0 +1,6 @@
+{
+  "note": "Root pointer is the empty string, per RFC 6901.",
+  "tags": [
+    "required"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "note": "Index in the pointer is what makes array failures triageable.",
+  "tags": [
+    "arrays",
+    "types"
+  ]
+}

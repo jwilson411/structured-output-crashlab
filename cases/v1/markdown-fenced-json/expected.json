@@ -1,0 +1,4 @@
+{
+  "status": "syntax_invalid",
+  "description": "Fences are NOT stripped: the first character is a backtick, so this never parses."
+}

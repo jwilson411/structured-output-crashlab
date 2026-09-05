@@ -1,0 +1,4 @@
+{
+  "status": "trailing_content",
+  "description": "Two JSON values back to back; only the first is a document."
+}

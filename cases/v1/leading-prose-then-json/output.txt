@@ -1,0 +1,2 @@
+Sure! Here is the JSON you asked for:
+{"status": "shipped"}

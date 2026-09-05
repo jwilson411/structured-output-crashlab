@@ -1,0 +1,4 @@
+{
+  "status": "schema_valid",
+  "description": "Whitespace around a value is legal JSON; only non-whitespace is content."
+}

@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    ""
+  ],
+  "description": "Missing required property; the error points at the containing object (root)."
+}

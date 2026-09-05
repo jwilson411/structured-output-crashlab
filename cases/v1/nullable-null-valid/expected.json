@@ -1,0 +1,4 @@
+{
+  "status": "schema_valid",
+  "description": "Explicit null against type [string, null]."
+}

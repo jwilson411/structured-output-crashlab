@@ -1,0 +1,7 @@
+{
+  "note": "Guards against treating a union type as permissive.",
+  "tags": [
+    "nullability",
+    "types"
+  ]
+}
