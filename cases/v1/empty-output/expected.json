@@ -1,0 +1,4 @@
+{
+  "status": "syntax_invalid",
+  "description": "Empty output is not a JSON value."
+}

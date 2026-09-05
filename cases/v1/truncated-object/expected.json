@@ -1,0 +1,4 @@
+{
+  "status": "syntax_invalid",
+  "description": "Output stops mid-object -- e.g. a token budget ran out."
+}

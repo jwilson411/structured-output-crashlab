@@ -1,0 +1,6 @@
+{
+  "note": "null is a value, not a missing field.",
+  "tags": [
+    "nullability"
+  ]
+}

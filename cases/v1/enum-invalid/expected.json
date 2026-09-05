@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/status"
+  ],
+  "description": "Right word, wrong casing -- still not an enum member."
+}

@@ -1,0 +1,6 @@
+{
+  "note": "Distinct from syntax_invalid: a complete value did parse.",
+  "tags": [
+    "trailing"
+  ]
+}

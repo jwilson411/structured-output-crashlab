@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "optional nickname",
+  "type": "object",
+  "properties": {
+    "nickname": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "nickname"
+  ]
+}

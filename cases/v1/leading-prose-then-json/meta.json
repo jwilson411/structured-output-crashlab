@@ -1,0 +1,7 @@
+{
+  "note": "Regression guard for the no-repair rule.",
+  "tags": [
+    "syntax",
+    "no-repair"
+  ]
+}

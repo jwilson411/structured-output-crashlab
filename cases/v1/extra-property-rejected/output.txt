@@ -1,0 +1,1 @@
+{"name": "ada", "email": "ada@example.test", "debug": "chain-of-thought"}
