@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/customer"
+  ],
+  "description": "Required property 'name' removed."
+}

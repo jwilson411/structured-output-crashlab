@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/tags/1"
+  ],
+  "description": "String length pushed past maxLength."
+}

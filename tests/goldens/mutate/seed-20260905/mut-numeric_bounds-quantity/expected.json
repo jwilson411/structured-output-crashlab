@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/quantity"
+  ],
+  "description": "Numeric value pushed past maximum."
+}

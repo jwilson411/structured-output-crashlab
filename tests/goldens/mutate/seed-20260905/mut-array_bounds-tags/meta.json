@@ -1,0 +1,22 @@
+{
+  "seed": 20260905,
+  "mutation_id": "array_bounds",
+  "pointer": "/tags",
+  "before": [
+    "rush",
+    "gift"
+  ],
+  "after": [
+    "rush",
+    "gift",
+    "gift",
+    "gift"
+  ],
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "array_bounds"
+  ],
+  "bound": "maxItems",
+  "limit": 3
+}

@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/customer/vip"
+  ],
+  "description": "Value declared as 'boolean' replaced with 'integer'."
+}

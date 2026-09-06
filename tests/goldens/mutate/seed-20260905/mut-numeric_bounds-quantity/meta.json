@@ -1,0 +1,14 @@
+{
+  "seed": 20260905,
+  "mutation_id": "numeric_bounds",
+  "pointer": "/quantity",
+  "before": 2,
+  "after": 11,
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "numeric_bounds"
+  ],
+  "bound": "maximum",
+  "limit": 10
+}

@@ -1,0 +1,4 @@
+{
+  "status": "schema_valid",
+  "description": "Object serialized with the key 'customer' repeated; json.loads keeps the last occurrence, so the duplicate is silent."
+}

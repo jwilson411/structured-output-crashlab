@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/tags"
+  ],
+  "description": "Array length pushed past maxItems."
+}

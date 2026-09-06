@@ -1,0 +1,14 @@
+{
+  "seed": 20260905,
+  "mutation_id": "truncation",
+  "pointer": "",
+  "before": "{\"id\":\"A-1001\",\"status\":\"shipped\",\"quantity\":2,\"discount\":0.25,\"customer\":{\"name\":\"Ada\",\"vip\":true},\"tags\":[\"rush\",\"gift\"]}",
+  "after": "{\"id\":\"A-1001\",\"status\":\"shipped\",\"quantity\":2,\"discount\":0.2",
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "truncation"
+  ],
+  "cut_index": 61,
+  "original_length": 123
+}

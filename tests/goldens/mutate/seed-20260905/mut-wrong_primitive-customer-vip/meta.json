@@ -1,0 +1,12 @@
+{
+  "seed": 20260905,
+  "mutation_id": "wrong_primitive",
+  "pointer": "/customer/vip",
+  "before": true,
+  "after": 0,
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "wrong_primitive"
+  ]
+}

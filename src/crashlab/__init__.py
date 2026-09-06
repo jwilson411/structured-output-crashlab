@@ -18,11 +18,19 @@ from crashlab.classify import (
     classify,
     classify_text,
 )
+from crashlab.mutate import (
+    MUTATION_IDS,
+    MutateError,
+    MutationRun,
+    generate,
+    mutate_files,
+)
 from crashlab.report import CaseResult, build_report, render_human, run_cases
 
 __version__ = "0.1.0"
 
 __all__ = [
+    "MUTATION_IDS",
     "SCHEMA_DRAFT",
     "SCHEMA_INVALID",
     "SCHEMA_VALID",
@@ -33,12 +41,16 @@ __all__ = [
     "CaseError",
     "CaseResult",
     "Classification",
+    "MutateError",
+    "MutationRun",
     "SchemaError",
     "__version__",
     "build_report",
     "classify",
     "classify_text",
+    "generate",
     "load_cases",
+    "mutate_files",
     "render_human",
     "run_cases",
 ]

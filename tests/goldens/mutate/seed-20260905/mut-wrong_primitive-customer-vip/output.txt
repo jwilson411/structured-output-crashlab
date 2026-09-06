@@ -1,0 +1,1 @@
+{"id":"A-1001","status":"shipped","quantity":2,"discount":0.25,"customer":{"name":"Ada","vip":0},"tags":["rush","gift"]}
