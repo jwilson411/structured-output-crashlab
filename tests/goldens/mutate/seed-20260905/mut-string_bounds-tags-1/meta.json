@@ -1,0 +1,14 @@
+{
+  "seed": 20260905,
+  "mutation_id": "string_bounds",
+  "pointer": "/tags/1",
+  "before": "gift",
+  "after": "aaaaaaa",
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "string_bounds"
+  ],
+  "bound": "maxLength",
+  "limit": 6
+}

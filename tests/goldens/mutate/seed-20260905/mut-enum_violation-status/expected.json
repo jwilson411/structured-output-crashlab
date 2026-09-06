@@ -1,0 +1,7 @@
+{
+  "status": "schema_invalid",
+  "error_pointers": [
+    "/status"
+  ],
+  "description": "Enum-constrained value replaced with a same-type non-member."
+}

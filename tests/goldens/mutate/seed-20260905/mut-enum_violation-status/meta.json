@@ -1,0 +1,17 @@
+{
+  "seed": 20260905,
+  "mutation_id": "enum_violation",
+  "pointer": "/status",
+  "before": "shipped",
+  "after": "__crashlab_not_in_enum",
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "enum_violation"
+  ],
+  "enum": [
+    "new",
+    "shipped",
+    "cancelled"
+  ]
+}

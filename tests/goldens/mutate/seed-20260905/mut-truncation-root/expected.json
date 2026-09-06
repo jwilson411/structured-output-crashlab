@@ -1,0 +1,4 @@
+{
+  "status": "syntax_invalid",
+  "description": "Compact serialization cut mid-value; nothing is completed."
+}

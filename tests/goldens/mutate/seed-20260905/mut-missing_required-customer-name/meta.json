@@ -1,0 +1,13 @@
+{
+  "seed": 20260905,
+  "mutation_id": "missing_required",
+  "pointer": "/customer/name",
+  "before": "Ada",
+  "after": null,
+  "generator": "crashlab-mutate",
+  "tags": [
+    "generated",
+    "missing_required"
+  ],
+  "removed_property": "name"
+}

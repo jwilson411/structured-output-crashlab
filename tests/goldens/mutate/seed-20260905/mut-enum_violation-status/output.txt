@@ -1,0 +1,1 @@
+{"id":"A-1001","status":"__crashlab_not_in_enum","quantity":2,"discount":0.25,"customer":{"name":"Ada","vip":true},"tags":["rush","gift"]}
