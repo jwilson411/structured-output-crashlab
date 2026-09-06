@@ -119,6 +119,7 @@ crashlab run cases/v1/enum-invalid    # a single case directory also works
 
 crashlab mutate --schema s.json --json valid.json --seed 20260905 --out /tmp/generated
 crashlab stream cases/v1/enum-valid --chunk-plan one-byte
+crashlab minimize cases/v1/required-missing --out /tmp/incident
 ```
 
 Exit code is `0` when every case matches its `expected.json`, and `1` on any mismatch or
@@ -315,6 +316,97 @@ Out of scope, on purpose: there is no SSE or WebSocket client, no retry policy, 
 adapter, and no partial-object business logic. Feed it bytes; it does not care where they
 came from.
 
+## Shrinking a failure with `crashlab minimize`
+
+A real failing case arrives with a 400-line schema and a 6 KB output, and almost none of it
+is load-bearing. `crashlab minimize` reduces the schema and the output **together** until
+one full pass of the operator list changes nothing, then writes a portable incident bundle.
+
+```bash
+crashlab minimize cases/v1/required-missing --out /tmp/incident
+crashlab minimize required-missing --out /tmp/incident      # a bare case ID works too
+crashlab run /tmp/incident/case                             # the bundle is an ordinary case
+```
+
+```
+$ crashlab minimize cases/v1/trailing-text-after-value --out /tmp/incident
+crashlab minimize -- trailing-text-after-value -- trailing_content
+
+schema  272 -> 111 bytes
+output  61 -> 6 bytes
+total   333 -> 117 bytes
+pointers: (none) -> (none)
+16 reduction(s) over 2 pass(es) -- drop_unused_property, trim_trailing_text
+...
+local minimum for this operator list, not the globally smallest failing case
+```
+
+The classifier is the oracle. After **every** candidate, the schema/output pair goes back
+through `classify_text`, and the candidate is accepted only if:
+
+- the SOC-01 status is unchanged,
+- it does not introduce additional errors, and
+- it keeps at least one of the original JSON Pointers, or one of the original error
+  keywords (`required property`, `is not one of`, a property name, a word of the parse
+  error or of the trailing suffix).
+
+Candidates are also required to be strictly smaller than the current pair, so the search
+cannot cycle. Operators run in a fixed order, each enumerating candidates in a fixed order,
+and the first accepted candidate wins:
+
+| Operator | What it removes |
+| --- | --- |
+| `drop_unused_property` | an instance key and its `properties` / `required` entry, or a schema property with no instance member |
+| `shrink_array` | one array item at a time, highest index first |
+| `shrink_string` | instance strings, then `enum` / `const` strings — halve, then trim a character |
+| `simplify_nested_object` | a nested object off the preserved pointer path, replaced by `{}` or stripped of optional keys |
+| `drop_unused_defs` | a `$defs` / `definitions` entry no remaining `$ref` names |
+| `trim_trailing_text` | the suffix after a complete value (`trailing_content` only), a run then a character at a time |
+| `trim_syntax_padding` | fence language tags and padding lines around an unparseable body (`syntax_invalid` only) |
+
+**The result is a local minimum, not the globally smallest failing case.** Greedy search
+with a fixed operator list stops as soon as one full pass accepts nothing; a different
+operator order, or an operator nobody has written yet, could go further. The bundle says so
+in as many words, and `local_minimum: true` is in its `meta.json`.
+
+The [no-repair rule](#the-no-repair-rule) is unchanged here. A truncated value is never
+completed, a fence is never stripped to rescue the JSON inside it, and the JSON value under
+a trailing suffix is never removed — for `syntax_invalid` cases the span from the first
+`{`/`[` to the last `}`/`]` is not edited at all, so shrinking cannot accidentally turn the
+output into valid JSON.
+
+### Bundle layout
+
+```
+DIR/
+    case/
+        schema.json     # the minimized pair, in the normal case layout
+        output.txt
+        expected.json   # the preserved status (+ pointers, when there are any)
+        meta.json       # generator, source_id, local_minimum, original/minimized status
+    reduction.jsonl     # one JSON object per accepted reduction, in application order
+    bytes.json          # schema / output / total, before and after
+    INCIDENT.md         # the facts, the repro commands, the local-minimum disclaimer
+```
+
+`case/` is an ordinary SOC-01 case: `crashlab run DIR/case` loads and passes it. Byte counts
+are taken from the bundle's own encoding — `json.dumps(..., indent=2, sort_keys=True)` for
+`schema.json`, the exact bytes for `output.txt` — and a minimized instance is always
+serialized with a single stable encoder, so identical inputs give a byte-identical bundle.
+
+```json
+{"after_bytes": 469, "before_bytes": 481, "op": "drop_unused_property", "target": "/items/1/sku"}
+{"after_bytes": 459, "before_bytes": 469, "op": "shrink_array", "target": "/items/0"}
+```
+
+`INCIDENT.md` is factual on purpose: status, pointers, byte counts, how many operators
+applied, and how to reproduce it. There is no generated prose about why a model failed.
+
+Exit code is `0` when a bundle was written, and `1` on a bad argument, a bad case, an
+unreadable file, an unusable `--out` path, or a case that classifies as `schema_valid` —
+there is nothing to minimize when nothing failed. The source case directory is only ever
+read.
+
 ## Case layout
 
 Cases live in versioned directories. The case ID is the directory name, and it is the key
@@ -374,6 +466,11 @@ Out of scope on purpose:
 - **Scoring models.** It classifies the outputs you give it; it does not rank producers.
 - **Talking to transports.** No SSE parser, no WebSocket client, no retries. `crashlab
   stream` takes bytes and nothing else.
+- **General delta debugging.** `crashlab minimize` is a fixed list of schema-aware
+  operators, not hierarchical ddmin over arbitrary byte windows, and what it reaches is a
+  local minimum rather than the smallest failing case.
+- **Anonymizing data.** Minimizing usually deletes a lot, but nothing here claims to
+  remove sensitive values. Sanitize fixtures before you save them, as always.
 
 ## Layout
 
@@ -384,7 +481,8 @@ src/crashlab/
     report.py      # human + JSON reports
     mutate.py      # schema-directed mutation -> new cases
     stream.py      # incremental recognizer + chunk plans
-    cli.py         # crashlab run / mutate / stream
+    minimize.py    # schema-aware shrinking -> a local minimum + incident bundle
+    cli.py         # crashlab run / mutate / stream / minimize
 cases/v1/          # 17 synthetic fixtures
 tests/
     goldens/mutate/    # schema + instance + the seed-20260905 golden tree

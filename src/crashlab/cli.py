@@ -9,6 +9,7 @@ from pathlib import Path
 
 from crashlab.cases import CaseError, discover_case_dirs, load_case, load_cases
 from crashlab.classify import SchemaError
+from crashlab.minimize import MinimizeError, minimize_case, render_result, write_bundle
 from crashlab.mutate import MUTATION_IDS, MutateError, mutate_files, render_run
 from crashlab.report import render_human, render_json, run_cases
 from crashlab.stream import CHUNK_PLANS, DEFAULT_SEED, StreamError, stream_case
@@ -111,6 +112,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="report format (default: human)",
     )
     stream.set_defaults(func=_cmd_stream)
+
+    minimize = subparsers.add_parser(
+        "minimize",
+        help="shrink a failing case to a local minimum and write an incident bundle",
+        description=(
+            "Shrink a failing case -- schema and output together -- while the SOC-01 "
+            "classifier still reports the same failure class and one of the original "
+            "JSON Pointers or error keywords. The result is a local minimum for the "
+            "operator list, not the globally smallest failing case. The source case "
+            "directory is only ever read."
+        ),
+    )
+    # As with mutate and stream, arguments are checked by hand so a bad invocation exits 1.
+    minimize.add_argument(
+        "case",
+        nargs="?",
+        metavar="CASE",
+        help="a case directory (cases/v1/required-missing) or a case ID under ./cases",
+    )
+    minimize.add_argument(
+        "--out",
+        metavar="DIR",
+        help="bundle directory, created if missing; required, there is no default",
+    )
+    minimize.set_defaults(func=_cmd_minimize)
     return parser
 
 
@@ -224,6 +250,25 @@ def _cmd_stream(args: argparse.Namespace) -> int:
 
     print(render_stream_json(run) if args.format == "json" else render_stream_human(run))
     return 0 if run.passed else 1
+
+
+def _cmd_minimize(args: argparse.Namespace) -> int:
+    try:
+        missing = [
+            flag for flag, value in (("CASE", args.case), ("--out", args.out)) if value is None
+        ]
+        if missing:
+            raise MinimizeError("missing required argument(s): " + ", ".join(missing))
+
+        case = load_case(_resolve_case(args.case))
+        result = minimize_case(case)
+        out_dir = write_bundle(result, Path(args.out), args.case)
+    except (CaseError, SchemaError, MinimizeError) as exc:
+        print(f"crashlab: {exc}", file=sys.stderr)
+        return 1
+
+    print(render_result(result, out_dir, args.case))
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
