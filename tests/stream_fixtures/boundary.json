@@ -1,0 +1,842 @@
+{
+  "description": "Boundary fixtures for the incremental JSON recognizer. Each entry is a fixed chunking, so a failure is reproducible byte for byte. A chunk is either a string (encoded UTF-8) or {\"hex\": \"...\"} for raw bytes that are not valid UTF-8 on their own.",
+  "fixtures": [
+    {
+      "id": "object-split-mid-key",
+      "covers": "structural",
+      "description": "The chunk boundary falls inside an object key.",
+      "chunks": [
+        "{\"na",
+        "me\": \"ada\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "object-split-mid-string-value",
+      "covers": "structural",
+      "description": "The chunk boundary falls inside a string value.",
+      "chunks": [
+        "{\"name\": \"ad",
+        "a\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "delimiters-inside-string",
+      "covers": "structural",
+      "description": "Structural punctuation inside a string must not close the value.",
+      "chunks": [
+        "{\"name\": \"{[,:",
+        "}] not structure\"",
+        "}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "{[,:}] not structure"
+      }
+    },
+    {
+      "id": "escaped-quote-split-across-chunks",
+      "covers": "token",
+      "description": "A chunk ends on the backslash of \\\"; the quote arrives next.",
+      "chunks": [
+        "{\"name\": \"she said \\",
+        "\" loudly\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "she said \" loudly"
+      }
+    },
+    {
+      "id": "unicode-escape-split-mid-sequence",
+      "covers": "token",
+      "description": "A \\uXXXX escape split into three chunks.",
+      "chunks": [
+        "{\"name\": \"caf\\u",
+        "00e",
+        "9\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "café"
+      }
+    },
+    {
+      "id": "surrogate-pair-escape-split",
+      "covers": "token",
+      "description": "A \\uD83D\\uDE00 surrogate pair split between its two halves.",
+      "chunks": [
+        "{\"name\": \"hi \\ud83d",
+        "\\ude00\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "hi 😀"
+      }
+    },
+    {
+      "id": "split-two-byte-utf8",
+      "covers": "encoding",
+      "description": "The two bytes of U+00E9 arrive in separate chunks.",
+      "chunks": [
+        "{\"name\": \"caf",
+        {
+          "hex": "c3"
+        },
+        {
+          "hex": "a9"
+        },
+        "\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "café"
+      }
+    },
+    {
+      "id": "split-four-byte-utf8",
+      "covers": "encoding",
+      "description": "The four bytes of U+1F600 arrive one per chunk.",
+      "chunks": [
+        "{\"name\": \"",
+        {
+          "hex": "f0"
+        },
+        {
+          "hex": "9f"
+        },
+        {
+          "hex": "98"
+        },
+        {
+          "hex": "80"
+        },
+        "\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "😀"
+      }
+    },
+    {
+      "id": "invalid-utf8-continuation-byte",
+      "covers": "encoding",
+      "description": "A lead byte followed by an illegal continuation; no later byte can fix it.",
+      "chunks": [
+        "{\"name\": \"",
+        {
+          "hex": "c328"
+        },
+        "\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "invalid-utf8",
+        "invalid-utf8"
+      ],
+      "final_status": "invalid-utf8",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "partial-utf8-at-finish",
+      "covers": "encoding",
+      "description": "A lead byte with no continuation is incomplete until finish(), then invalid UTF-8.",
+      "chunks": [
+        "{\"name\": \"caf",
+        {
+          "hex": "c3"
+        }
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "invalid-utf8",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "array-root-split",
+      "covers": "structural",
+      "description": "An array root split across chunks, including inside a number.",
+      "chunks": [
+        "[1,",
+        " 2",
+        "2, ",
+        "3]"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": [
+        1,
+        22,
+        3
+      ]
+    },
+    {
+      "id": "scalar-string-root-split",
+      "covers": "structural",
+      "description": "A bare string root split across chunks.",
+      "chunks": [
+        "\"he",
+        "llo\""
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": "hello"
+    },
+    {
+      "id": "scalar-number-split-after-minus",
+      "covers": "token",
+      "description": "A number is never complete until a delimiter or finish(): '-' then digits.",
+      "chunks": [
+        "-",
+        "12",
+        "3"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "integer"
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": -123
+    },
+    {
+      "id": "scalar-number-split-after-point",
+      "covers": "token",
+      "description": "A fractional number split after the decimal point.",
+      "chunks": [
+        "3.",
+        "1",
+        "4"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "number"
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": 3.14
+    },
+    {
+      "id": "number-followed-by-digit-is-trailing",
+      "covers": "trailing",
+      "description": "'01' is the value 0 with a stray '1' after it, exactly as raw_decode reads it.",
+      "chunks": [
+        "0",
+        "1"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "integer"
+      },
+      "feed_states": [
+        "incomplete",
+        "trailing-content"
+      ],
+      "final_status": "trailing-content",
+      "soc1_status": "trailing_content",
+      "value": 0
+    },
+    {
+      "id": "scalar-true-split-mid-token",
+      "covers": "token",
+      "description": "The literal 'true' split one character at a time.",
+      "chunks": [
+        "t",
+        "r",
+        "u",
+        "e"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "boolean"
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": true
+    },
+    {
+      "id": "scalar-null-split-mid-token",
+      "covers": "token",
+      "description": "The literal 'null' split mid-token.",
+      "chunks": [
+        "nu",
+        "ll"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": null
+    },
+    {
+      "id": "truncated-literal-at-finish",
+      "covers": "token",
+      "description": "A literal cut short is incomplete mid-stream and invalid at finish().",
+      "chunks": [
+        "fal",
+        "s"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "boolean"
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "whitespace-only-chunks-between-tokens",
+      "covers": "structural",
+      "description": "Chunks made only of whitespace are incomplete, not a signal of anything.",
+      "chunks": [
+        "{",
+        "   ",
+        "\"name\"",
+        " ",
+        ":",
+        "  ",
+        "\"ada\"",
+        " ",
+        "}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "leading-whitespace-then-value",
+      "covers": "structural",
+      "description": "Whitespace before the value parses normally, matching classify_text.",
+      "chunks": [
+        "\n  ",
+        "{\"name\": \"ada\"}",
+        "\n"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_valid",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "trailing-content-in-later-chunk",
+      "covers": "trailing",
+      "description": "A complete object flips to trailing-content when prose arrives after it.",
+      "chunks": [
+        "{\"name\": \"ada\"}",
+        " ",
+        "Let me know if you need anything else!"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "complete",
+        "complete",
+        "trailing-content"
+      ],
+      "final_status": "trailing-content",
+      "soc1_status": "trailing_content",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "two-concatenated-values",
+      "covers": "trailing",
+      "description": "A second value is never parsed; the first one stands and the rest is trailing.",
+      "chunks": [
+        "{\"name\": \"ada\"}",
+        "{\"name\": \"bo\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "complete",
+        "trailing-content"
+      ],
+      "final_status": "trailing-content",
+      "soc1_status": "trailing_content",
+      "value": {
+        "name": "ada"
+      }
+    },
+    {
+      "id": "truncated-object-at-finish",
+      "covers": "structural",
+      "description": "Nested objects left open at finish() are invalid, never completed for you.",
+      "chunks": [
+        "{\"name\":",
+        " {\"first\":"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "unterminated-string-at-finish",
+      "covers": "structural",
+      "description": "An unterminated string is incomplete until finish(), then invalid.",
+      "chunks": [
+        "{\"name\": \"ad",
+        "a"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "empty-stream",
+      "covers": "structural",
+      "description": "No bytes at all: nothing to feed, invalid at finish().",
+      "chunks": [],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "whitespace-only-stream",
+      "covers": "structural",
+      "description": "Whitespace-only chunks never become a value.",
+      "chunks": [
+        "  ",
+        "\n\t"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "incomplete"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "invalid-escape-split-across-chunks",
+      "covers": "token",
+      "description": "An unknown escape is invalid even when the backslash and the letter arrive apart.",
+      "chunks": [
+        "{\"name\": \"a\\",
+        "q\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "invalid"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "raw-control-character-in-string",
+      "covers": "token",
+      "description": "A raw tab inside a string is a syntax error, matching json's strict scanner.",
+      "chunks": [
+        "{\"name\": \"a",
+        {
+          "hex": "09"
+        },
+        "b\"}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "invalid",
+        "invalid"
+      ],
+      "final_status": "invalid",
+      "soc1_status": "syntax_invalid"
+    },
+    {
+      "id": "complete-value-fails-schema",
+      "covers": "structural",
+      "description": "A structurally complete value still goes through the SOC-01 schema validator.",
+      "chunks": [
+        "{\"name\":",
+        " 42}"
+      ],
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "feed_states": [
+        "incomplete",
+        "complete"
+      ],
+      "final_status": "complete",
+      "soc1_status": "schema_invalid",
+      "value": {
+        "name": 42
+      },
+      "error_pointers": [
+        "/name"
+      ]
+    }
+  ]
+}

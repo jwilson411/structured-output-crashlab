@@ -118,6 +118,7 @@ crashlab run cases --json             # shorthand for --format json
 crashlab run cases/v1/enum-invalid    # a single case directory also works
 
 crashlab mutate --schema s.json --json valid.json --seed 20260905 --out /tmp/generated
+crashlab stream cases/v1/enum-valid --chunk-plan one-byte
 ```
 
 Exit code is `0` when every case matches its `expected.json`, and `1` on any mismatch or
@@ -223,6 +224,97 @@ The shape is stable — parse it, diff it, store it.
 }
 ```
 
+## Streaming classification with `crashlab stream`
+
+Everything above assumes you have the whole output. A streaming client does not: it gets
+the value one transport frame at a time, and the frames fall wherever the transport put
+them — in the middle of a key, between the two halves of `\"`, between the lead byte and
+the continuation byte of `é`. Parsers that are correct on whole documents routinely get
+these wrong, and the bug only shows up under load, when the chunk sizes change.
+
+`crashlab.stream.IncrementalJson` recognizes one JSON value from arbitrary `bytes` chunks
+and reports one of five states:
+
+| State | Meaning |
+| --- | --- |
+| `complete` | One JSON value, structurally finished. |
+| `incomplete` | A prefix of a JSON value. More bytes could still finish it. |
+| `invalid` | The bytes cannot be a prefix of any JSON value. |
+| `trailing-content` | A complete value followed by non-whitespace. |
+| `invalid-utf8` | The bytes are not UTF-8, and no continuation byte can fix that. |
+
+```python
+from crashlab import IncrementalJson
+
+parser = IncrementalJson({"type": "object", "required": ["name"]})
+parser.feed(b'{"name": "ad').status      # 'incomplete'
+parser.feed(b'a"}').status               # 'complete'
+parser.finish().classification.status    # 'schema_valid'
+```
+
+Two rules do the load-bearing work:
+
+- **Never complete early.** `{"a": 1` is `incomplete`, not a partial object to hand
+  upward. A number is only finished once a byte arrives that could not extend it, or the
+  stream ends — `1` and `12` are different values, and only the transport knows which one
+  you have.
+- **Never repair.** The [no-repair rule](#the-no-repair-rule) applies unchanged. Truncation
+  is reported, not completed; trailing bytes are reported, not discarded. `finish()` on an
+  unfinished value returns `invalid` with a `truncated: ...` detail, never a best-effort
+  object.
+
+Split multibyte UTF-8 is `incomplete`, not `invalid-utf8` — half of `é` is a legitimate
+thing to see mid-stream. It becomes `invalid-utf8` only when a byte arrives that cannot
+continue the sequence, or when the stream ends with a partial sequence still buffered.
+
+A finished value goes through the SOC-01 classifier, so the streaming path and the offline
+path cannot drift apart. The recognizer deliberately tracks the same grammar as
+`json.JSONDecoder.raw_decode`, including its edges: `01` is the value `0` followed by
+trailing `1`, and `1e` is the value `1` followed by trailing `e`. A property test asserts
+that agreement over random token soup, and another asserts that no chunking of a valid
+payload ever changes the final status or the decoded value.
+
+### Chunk plans
+
+The subcommand replays a case's `output.txt` through the recognizer under a chunk plan.
+Every plan is deterministic — a failing stream is a fixture, not a flake — and the chunks
+always concatenate back to the exact bytes, since a plan chooses boundaries and never edits
+content.
+
+| Plan | Boundaries |
+| --- | --- |
+| `one-byte` | every chunk is exactly one byte, so every multibyte sequence is split |
+| `boundary-focused` | structural punctuation, both sides of a `\` escape, inside `\uXXXX`, each byte of a multibyte sequence, the edges of whitespace runs, with empty chunks interleaved |
+| `seeded` | pseudo-random variable-length chunks, including empty ones, from `--seed` (default `0`) |
+
+```bash
+crashlab stream cases/v1/enum-valid --chunk-plan one-byte
+crashlab stream enum-valid --chunk-plan boundary-focused      # a bare case ID works too
+crashlab stream truncated-object --chunk-plan seeded --seed 5 --format json
+```
+
+```
+$ crashlab stream cases/v1/enum-valid --chunk-plan one-byte
+structured-output-crashlab -- stream enum-valid -- plan one-byte
+22 chunk(s), 22 byte(s)
+
+feed states: complete x2, incomplete x20
+first complete after chunk 21/22
+final: complete
+soc1: schema_valid  (expected schema_valid)
+
+ok
+```
+
+Exit code is `0` when the final state, projected onto the four SOC-01 statuses, matches the
+case's `expected.json`, and `1` on a mismatch or a bad argument. `incomplete` and
+`invalid-utf8` have no SOC-01 equivalent — the first is a truncated document, the second
+never decodes to text — so both project onto `syntax_invalid`.
+
+Out of scope, on purpose: there is no SSE or WebSocket client, no retry policy, no provider
+adapter, and no partial-object business logic. Feed it bytes; it does not care where they
+came from.
+
 ## Case layout
 
 Cases live in versioned directories. The case ID is the directory name, and it is the key
@@ -280,6 +372,8 @@ Out of scope on purpose:
 - **Repairing output.** No fence stripping, no substring extraction, no truncation fixing.
 - **Generating types.** No Pydantic or dataclass code generation.
 - **Scoring models.** It classifies the outputs you give it; it does not rank producers.
+- **Talking to transports.** No SSE parser, no WebSocket client, no retries. `crashlab
+  stream` takes bytes and nothing else.
 
 ## Layout
 
@@ -289,10 +383,12 @@ src/crashlab/
     cases.py       # load versioned case directories
     report.py      # human + JSON reports
     mutate.py      # schema-directed mutation -> new cases
-    cli.py         # crashlab run / crashlab mutate
+    stream.py      # incremental recognizer + chunk plans
+    cli.py         # crashlab run / mutate / stream
 cases/v1/          # 17 synthetic fixtures
 tests/
-    goldens/mutate/  # schema + instance + the seed-20260905 golden tree
+    goldens/mutate/    # schema + instance + the seed-20260905 golden tree
+    stream_fixtures/   # boundary chunkings for the incremental recognizer
 ```
 
 ## License
