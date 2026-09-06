@@ -18,6 +18,14 @@ from crashlab.classify import (
     classify,
     classify_text,
 )
+from crashlab.minimize import (
+    OPERATOR_IDS,
+    MinimizeError,
+    MinimizeResult,
+    Reduction,
+    minimize_case,
+    write_bundle,
+)
 from crashlab.mutate import (
     MUTATION_IDS,
     MutateError,
@@ -48,6 +56,7 @@ __version__ = "0.1.0"
 __all__ = [
     "CHUNK_PLANS",
     "MUTATION_IDS",
+    "OPERATOR_IDS",
     "SCHEMA_DRAFT",
     "SCHEMA_INVALID",
     "SCHEMA_VALID",
@@ -65,8 +74,11 @@ __all__ = [
     "CaseResult",
     "Classification",
     "IncrementalJson",
+    "MinimizeError",
+    "MinimizeResult",
     "MutateError",
     "MutationRun",
+    "Reduction",
     "SchemaError",
     "StreamError",
     "StreamRun",
@@ -79,8 +91,10 @@ __all__ = [
     "feed_all",
     "generate",
     "load_cases",
+    "minimize_case",
     "mutate_files",
     "render_human",
     "run_cases",
     "stream_case",
+    "write_bundle",
 ]
