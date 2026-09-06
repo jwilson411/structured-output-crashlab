@@ -7,10 +7,13 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from crashlab.cases import CaseError, load_cases
+from crashlab.cases import CaseError, discover_case_dirs, load_case, load_cases
 from crashlab.classify import SchemaError
 from crashlab.mutate import MUTATION_IDS, MutateError, mutate_files, render_run
 from crashlab.report import render_human, render_json, run_cases
+from crashlab.stream import CHUNK_PLANS, DEFAULT_SEED, StreamError, stream_case
+from crashlab.stream import render_human as render_stream_human
+from crashlab.stream import render_json as render_stream_json
 
 DEFAULT_CASES_DIR = "cases"
 
@@ -74,6 +77,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mutate.add_argument("--max-cases", metavar="N", help="write at most N cases")
     mutate.set_defaults(func=_cmd_mutate)
+
+    stream = subparsers.add_parser(
+        "stream",
+        help="feed a case through the incremental parser one chunk at a time",
+        description=(
+            "Stream a case's output.txt through the incremental JSON recognizer "
+            "under a chunk plan, and check that the final SOC-01 status still "
+            "matches expected.json. Chunk boundaries must not change the verdict."
+        ),
+    )
+    # As with mutate, arguments are checked by hand so a bad invocation exits 1.
+    stream.add_argument(
+        "case",
+        nargs="?",
+        metavar="CASE",
+        help="a case directory (cases/v1/enum-valid) or a case ID under ./cases",
+    )
+    stream.add_argument(
+        "--chunk-plan",
+        metavar="PLAN",
+        help="one of " + ", ".join(CHUNK_PLANS) + "; required, there is no default",
+    )
+    stream.add_argument(
+        "--seed",
+        metavar="INT",
+        help=f"seed for the 'seeded' plan (default: {DEFAULT_SEED})",
+    )
+    stream.add_argument(
+        "--format",
+        choices=("human", "json"),
+        default="human",
+        help="report format (default: human)",
+    )
+    stream.set_defaults(func=_cmd_stream)
     return parser
 
 
@@ -93,13 +130,18 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0 if all(result.passed for result in results) else 1
 
 
-def _int_arg(name: str, raw: str, minimum: int | None = None) -> int:
+def _int_arg(
+    name: str,
+    raw: str,
+    minimum: int | None = None,
+    error: type[Exception] = MutateError,
+) -> int:
     try:
         value = int(raw, 10)
     except ValueError:
-        raise MutateError(f"{name} must be an integer, got {raw!r}") from None
+        raise error(f"{name} must be an integer, got {raw!r}") from None
     if minimum is not None and value < minimum:
-        raise MutateError(f"{name} must be >= {minimum}, got {value}")
+        raise error(f"{name} must be >= {minimum}, got {value}")
     return value
 
 
@@ -140,6 +182,48 @@ def _cmd_mutate(args: argparse.Namespace) -> int:
 
     print(render_run(run))
     return 0
+
+
+def _resolve_case(reference: str) -> Path:
+    """Accept a case directory path, or a bare case ID to look up under ./cases."""
+    path = Path(reference)
+    if path.is_dir():
+        return path
+    if not path.parts or len(path.parts) > 1:
+        raise CaseError(f"{reference}: not a case directory")
+    for candidate in discover_case_dirs(Path(DEFAULT_CASES_DIR)):
+        if candidate.name == reference:
+            return candidate
+    raise CaseError(f"{reference}: no such case directory, and no case with that ID under ./cases")
+
+
+def _cmd_stream(args: argparse.Namespace) -> int:
+    try:
+        missing = [
+            flag
+            for flag, value in (("CASE", args.case), ("--chunk-plan", args.chunk_plan))
+            if value is None
+        ]
+        if missing:
+            raise StreamError("missing required argument(s): " + ", ".join(missing))
+        if args.chunk_plan not in CHUNK_PLANS:
+            raise StreamError(
+                f"unknown chunk plan {args.chunk_plan!r}; choose from {', '.join(CHUNK_PLANS)}"
+            )
+
+        seed = (
+            DEFAULT_SEED
+            if args.seed is None
+            else _int_arg("--seed", args.seed, error=StreamError)
+        )
+        case = load_case(_resolve_case(args.case))
+        run = stream_case(case, args.chunk_plan, seed)
+    except (CaseError, SchemaError, StreamError) as exc:
+        print(f"crashlab: {exc}", file=sys.stderr)
+        return 1
+
+    print(render_stream_json(run) if args.format == "json" else render_stream_human(run))
+    return 0 if run.passed else 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:
